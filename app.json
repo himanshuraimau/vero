@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/image.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.enghimanshu.vero"
     },
     "web": {
       "output": "server",
@@ -28,15 +29,16 @@
       [
         "expo-splash-screen",
         {
-"image": "./assets/image.png",
-        "imageWidth": 200,
-        "resizeMode": "contain",
-        "backgroundColor": "#1c1917",
-        "dark": {
-          "backgroundColor": "#1c1917"
+          "image": "./assets/image.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#1c1917",
+          "dark": {
+            "backgroundColor": "#1c1917"
+          }
         }
-        }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

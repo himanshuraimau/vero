@@ -62,7 +62,9 @@ export default function HomeScreen() {
       router.push(`/topic/${topic.id}`);
     } catch (err) {
       console.error('[Home] createTopic failed', err);
-      Alert.alert('Error', 'Could not create topic.');
+      const message =
+        __DEV__ && err instanceof Error ? `${err.message}` : 'Could not create topic.';
+      Alert.alert('Error', message);
     }
   };
 

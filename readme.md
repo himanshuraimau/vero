@@ -96,6 +96,7 @@ Generated APKs will be under `android/app/build/outputs/apk/`.
   - Ensure `expo-sqlite` is installed and added as a plugin in `app.json`.
 
 - If builds behave strangely after changing native‑related config, try:
+
   ```bash
   rm -rf android
   npx expo prebuild --platform android

@@ -15,11 +15,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ui/icon';
 import { Colors } from '@/constants/theme';
-import { createTopic, deleteTopic, getTopics, type Topic } from '@/app/db/queries';
+import {
+  createTopic,
+  deleteTopic,
+  getTopics,
+  setTopicRead,
+  type Topic,
+} from '@/app/db/queries';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [loading, setLoading] = useState(true);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
@@ -82,6 +89,25 @@ export default function HomeScreen() {
     );
   };
 
+  const handleToggleTopicRead = async (topicId: string, current?: number) => {
+    const next = !current;
+    try {
+      await setTopicRead(topicId, next);
+      setTopics((prev) =>
+        prev.map((t) => (t.id === topicId ? { ...t, is_read: next ? 1 : 0 } : t))
+      );
+    } catch (err) {
+      console.error('[Home] setTopicRead failed', err);
+    }
+  };
+
+  const filteredTopics = topics.filter((t) => {
+    const read = !!t.is_read;
+    if (filter === 'read') return read;
+    if (filter === 'unread') return !read;
+    return true;
+  });
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -99,6 +125,51 @@ export default function HomeScreen() {
         <Pressable onPress={openCreateModal} style={styles.addButton}>
           <Icon name="Plus" size={24} color={Colors.dark.accent} />
           <Text style={styles.addText}>Create Topic</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.filterRow}>
+        <Pressable
+          onPress={() => setFilter('all')}
+          style={[
+            styles.filterChip,
+            filter === 'all' && styles.filterChipActive,
+          ]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'all' && styles.filterTextActive,
+            ]}>
+            All
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setFilter('unread')}
+          style={[
+            styles.filterChip,
+            filter === 'unread' && styles.filterChipActive,
+          ]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'unread' && styles.filterTextActive,
+            ]}>
+            Unread
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setFilter('read')}
+          style={[
+            styles.filterChip,
+            filter === 'read' && styles.filterChipActive,
+          ]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === 'read' && styles.filterTextActive,
+            ]}>
+            Read
+          </Text>
         </Pressable>
       </View>
 
@@ -137,7 +208,7 @@ export default function HomeScreen() {
       </Modal>
 
       <FlatList
-        data={topics}
+        data={filteredTopics}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
@@ -147,16 +218,29 @@ export default function HomeScreen() {
             <Text style={styles.emptySubtext}>Create a topic to get started</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.topicCard}
-            onPress={() => router.push(`/topic/${item.id}`)}
-            onLongPress={() => handleDeleteTopic(item.id, item.name)}>
-            <Icon name="Book" size={24} color={Colors.dark.accent} />
-            <Text style={styles.topicName}>{item.name}</Text>
-            <Icon name="NavArrowRight" size={20} color={Colors.dark.secondaryText} />
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const isRead = !!item.is_read;
+          return (
+            <Pressable
+              style={styles.topicCard}
+              onPress={() => router.push(`/topic/${item.id}`)}
+              onLongPress={() => handleDeleteTopic(item.id, item.name)}>
+              <Icon name="Book" size={24} color={Colors.dark.accent} />
+              <Text style={styles.topicName}>{item.name}</Text>
+              <Pressable
+                onPress={() => handleToggleTopicRead(item.id, item.is_read)}
+                hitSlop={8}
+                style={styles.topicReadToggle}>
+                <Icon
+                  name={isRead ? 'CheckCircle' : 'Circle'}
+                  size={20}
+                  color={isRead ? Colors.dark.accent : Colors.dark.secondaryText}
+                />
+              </Pressable>
+              <Icon name="NavArrowRight" size={20} color={Colors.dark.secondaryText} />
+            </Pressable>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -198,6 +282,35 @@ const styles = StyleSheet.create({
     color: Colors.dark.accent,
     fontWeight: '600',
   },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.divider,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.dark.divider,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
+  },
+  filterText: {
+    fontSize: 13,
+    color: Colors.dark.secondaryText,
+  },
+  filterTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
   list: {
     padding: 16,
     flexGrow: 1,
@@ -216,6 +329,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: Colors.dark.primaryText,
     fontWeight: '500',
+  },
+  topicReadToggle: {
+    paddingHorizontal: 4,
   },
   empty: {
     flex: 1,

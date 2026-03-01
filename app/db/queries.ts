@@ -25,12 +25,12 @@ export async function createTopic(name: string): Promise<Topic> {
     const created_at = Date.now();
 
     await database.runAsync(
-      'INSERT INTO topics (id, name, created_at, conversion_progress) VALUES (?, ?, ?, 0)',
+      'INSERT INTO topics (id, name, created_at, conversion_progress, is_read) VALUES (?, ?, ?, 0, 0)',
       [id, name, created_at]
     );
     dbLog.info('createTopic: inserted', { id });
 
-    return { id, name, created_at, conversion_progress: 0 };
+    return { id, name, created_at, conversion_progress: 0, is_read: 0 };
   } catch (err) {
     dbLog.error('createTopic failed', err);
     throw err;
@@ -41,8 +41,10 @@ export async function getTopics(): Promise<Topic[]> {
   dbLog.info('getTopics');
   try {
     const database = await getDb();
-    const rows = await database.getAllAsync<Topic & { conversion_progress?: number }>(
-      'SELECT id, name, created_at, COALESCE(conversion_progress, 0) as conversion_progress FROM topics ORDER BY created_at DESC'
+    const rows = await database.getAllAsync<
+      Topic & { conversion_progress?: number; is_read?: number }
+    >(
+      'SELECT id, name, created_at, COALESCE(conversion_progress, 0) as conversion_progress, COALESCE(is_read, 0) as is_read FROM topics ORDER BY created_at DESC'
     );
     dbLog.info('getTopics: count', rows?.length ?? 0);
     return rows ?? [];
@@ -56,8 +58,10 @@ export async function getTopic(id: string): Promise<Topic | null> {
   dbLog.info('getTopic', { id });
   try {
     const database = await getDb();
-    const row = await database.getFirstAsync<Topic & { conversion_progress?: number }>(
-      'SELECT id, name, created_at, COALESCE(conversion_progress, 0) as conversion_progress FROM topics WHERE id = ?',
+    const row = await database.getFirstAsync<
+      Topic & { conversion_progress?: number; is_read?: number }
+    >(
+      'SELECT id, name, created_at, COALESCE(conversion_progress, 0) as conversion_progress, COALESCE(is_read, 0) as is_read FROM topics WHERE id = ?',
       [id]
     );
     return row ?? null;
@@ -88,6 +92,20 @@ export async function updateTopicProgress(id: string, progress: number): Promise
     ]);
   } catch (err) {
     dbLog.error('updateTopicProgress failed', err);
+    throw err;
+  }
+}
+
+export async function setTopicRead(id: string, isRead: boolean): Promise<void> {
+  dbLog.info('setTopicRead', { id, isRead });
+  try {
+    const database = await getDb();
+    await database.runAsync('UPDATE topics SET is_read = ? WHERE id = ?', [
+      isRead ? 1 : 0,
+      id,
+    ]);
+  } catch (err) {
+    dbLog.error('setTopicRead failed', err);
     throw err;
   }
 }
@@ -129,7 +147,7 @@ export async function createQuestion(
     const created_at = Date.now();
 
     await database.runAsync(
-      'INSERT INTO questions (id, topic_id, question, answer, difficulty, confidence, created_at) VALUES (?, ?, ?, ?, 0, 0, ?)',
+      'INSERT INTO questions (id, topic_id, question, answer, difficulty, confidence, created_at, is_read) VALUES (?, ?, ?, ?, 0, 0, ?, 0)',
       [id, topicId, question, answer, created_at]
     );
     return {
@@ -140,6 +158,7 @@ export async function createQuestion(
       difficulty: 0,
       confidence: 0,
       created_at,
+      is_read: 0,
     };
   } catch (err) {
     dbLog.error('createQuestion failed', err);
@@ -163,7 +182,7 @@ export async function createQuestions(
       for (const item of items) {
         const id = generateId();
         await database.runAsync(
-          'INSERT INTO questions (id, topic_id, question, answer, difficulty, confidence, created_at) VALUES (?, ?, ?, ?, 0, 0, ?)',
+          'INSERT INTO questions (id, topic_id, question, answer, difficulty, confidence, created_at, is_read) VALUES (?, ?, ?, ?, 0, 0, ?, 0)',
           [id, topicId, item.question, item.answer, created_at]
         );
         results.push({
@@ -174,6 +193,7 @@ export async function createQuestions(
           difficulty: 0,
           confidence: 0,
           created_at,
+          is_read: 0,
         });
       }
     });
@@ -191,7 +211,7 @@ export async function getQuestionsByTopic(topicId: string): Promise<Question[]> 
   try {
     const database = await getDb();
     const rows = await database.getAllAsync<Question>(
-      'SELECT id, topic_id, question, answer, difficulty, confidence, created_at FROM questions WHERE topic_id = ? ORDER BY created_at ASC',
+      'SELECT id, topic_id, question, answer, difficulty, confidence, created_at, COALESCE(is_read, 0) as is_read FROM questions WHERE topic_id = ? ORDER BY created_at ASC',
       [topicId]
     );
     dbLog.info('getQuestionsByTopic: count', rows?.length ?? 0);
@@ -207,7 +227,7 @@ export async function getQuestion(id: string): Promise<Question | null> {
   try {
     const database = await getDb();
     const row = await database.getFirstAsync<Question>(
-      'SELECT id, topic_id, question, answer, difficulty, confidence, created_at FROM questions WHERE id = ?',
+      'SELECT id, topic_id, question, answer, difficulty, confidence, created_at, COALESCE(is_read, 0) as is_read FROM questions WHERE id = ?',
       [id]
     );
     return row ?? null;
@@ -227,6 +247,20 @@ export async function getQuestionCount(topicId: string): Promise<number> {
     return row?.count ?? 0;
   } catch (err) {
     dbLog.error('getQuestionCount failed', err);
+    throw err;
+  }
+}
+
+export async function setQuestionRead(id: string, isRead: boolean): Promise<void> {
+  dbLog.info('setQuestionRead', { id, isRead });
+  try {
+    const database = await getDb();
+    await database.runAsync('UPDATE questions SET is_read = ? WHERE id = ?', [
+      isRead ? 1 : 0,
+      id,
+    ]);
+  } catch (err) {
+    dbLog.error('setQuestionRead failed', err);
     throw err;
   }
 }

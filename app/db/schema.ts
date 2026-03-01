@@ -29,7 +29,8 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         created_at INTEGER NOT NULL,
-        conversion_progress INTEGER DEFAULT 0
+        conversion_progress INTEGER DEFAULT 0,
+        is_read INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS questions (
@@ -40,6 +41,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
         difficulty INTEGER DEFAULT 0,
         confidence INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
+        is_read INTEGER DEFAULT 0,
         FOREIGN KEY (topic_id) REFERENCES topics(id)
       );
 
@@ -61,6 +63,34 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       }
     }
 
+    try {
+      await db.execAsync(
+        `ALTER TABLE topics ADD COLUMN is_read INTEGER DEFAULT 0;`
+      );
+      dbLog.info('initDatabase: migration added topics.is_read');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('duplicate column') || msg.includes('already exists')) {
+        dbLog.info('initDatabase: topics.is_read already exists');
+      } else {
+        dbLog.warn('initDatabase: migration (topics.is_read)', e);
+      }
+    }
+
+    try {
+      await db.execAsync(
+        `ALTER TABLE questions ADD COLUMN is_read INTEGER DEFAULT 0;`
+      );
+      dbLog.info('initDatabase: migration added questions.is_read');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('duplicate column') || msg.includes('already exists')) {
+        dbLog.info('initDatabase: questions.is_read already exists');
+      } else {
+        dbLog.warn('initDatabase: migration (questions.is_read)', e);
+      }
+    }
+
       dbLog.info('initDatabase: done');
       return db;
     } catch (err) {
@@ -77,6 +107,7 @@ export type Topic = {
   name: string;
   created_at: number;
   conversion_progress?: number;
+  is_read?: number;
 };
 
 export type Question = {
@@ -87,4 +118,5 @@ export type Question = {
   difficulty: number;
   confidence: number;
   created_at: number;
+  is_read?: number;
 };

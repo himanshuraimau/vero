@@ -11,10 +11,19 @@ export type QuestionCardProps = {
   id: string;
   question: string;
   answer: string;
+  isRead?: boolean;
+  onToggleRead?: (next: boolean) => void;
   onReadMore?: () => void;
 };
 
-export function QuestionCard({ id, question, answer, onReadMore }: QuestionCardProps) {
+export function QuestionCard({
+  id,
+  question,
+  answer,
+  isRead = false,
+  onToggleRead,
+  onReadMore,
+}: QuestionCardProps) {
   const router = useRouter();
   const isLong = answer.length > TRUNCATE_LENGTH;
   const displayAnswer = isLong ? answer.slice(0, TRUNCATE_LENGTH) + '...' : answer;
@@ -24,9 +33,28 @@ export function QuestionCard({ id, question, answer, onReadMore }: QuestionCardP
     router.push(`/detail/${id}`);
   };
 
+  const handleToggleRead = () => {
+    if (!onToggleRead) return;
+    onToggleRead(!isRead);
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.question}>{question}</Text>
+      <View style={styles.questionRow}>
+        <Text style={styles.question}>{question}</Text>
+        {onToggleRead && (
+          <Pressable
+            onPress={handleToggleRead}
+            style={styles.readToggle}
+            hitSlop={8}>
+            <Icon
+              name={isRead ? 'CheckCircle' : 'Circle'}
+              size={20}
+              color={isRead ? Colors.dark.accent : Colors.dark.secondaryText}
+            />
+          </Pressable>
+        )}
+      </View>
       <View style={styles.divider} />
       <AnswerMarkdown>{displayAnswer}</AnswerMarkdown>
       <Pressable onPress={openDetail} style={styles.detailLink}>
@@ -46,12 +74,22 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     justifyContent: 'center',
   },
+  questionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 20,
+  },
   question: {
+    flex: 1,
     fontSize: 22,
     fontWeight: '600',
     color: Colors.dark.primaryText,
     lineHeight: 30,
-    marginBottom: 20,
+  },
+  readToggle: {
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   divider: {
     height: 1,

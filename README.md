@@ -1,50 +1,41 @@
-# Welcome to your Expo app 👋
+# Linear Knowledge Reader
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Local-first. AI-formatted. Gesture-driven reading.
 
-## Get started
+Paste raw content under a topic. AI converts it into clean question/answer pairs. Read them one by one in a distraction-free environment.
 
-1. Install dependencies
+## Setup
 
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
-   ```bash
-   npx expo start
+2. Create `.env` with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=sk-your-key-here
    ```
 
-In the output, you'll find options to open the app in a
+3. Start the app:
+   ```bash
+   npm start
+   ```
+   Then press `i` for iOS simulator, `a` for Android emulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Features
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Topics**: Create topics and organize Q&A pairs
+- **AI conversion**: Paste raw text, AI formats it into Q&A (batched, async)
+- **Reader**: Swipe up/down through questions (vertical pager)
+- **Read More**: Long answers truncate with a detail page for full content
 
-## Get a fresh project
+## Tech
 
-When you're ready, run:
+- Expo (React Native)
+- SQLite (expo-sqlite)
+- AI SDK + OpenAI (gpt-4o-mini)
+- Iconoir icons
 
-```bash
-npm run reset-project
-```
+## Web
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Web support requires additional configuration for expo-sqlite (WASM). The app is optimized for iOS and Android.

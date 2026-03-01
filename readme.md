@@ -47,6 +47,22 @@ From the home screen you can:
 - Mark topics / questions as read.
 - Delete topics (and all of their questions).
 
+## Question generation (Convert to Q&A)
+
+The “Convert to Q&A” feature uses OpenAI to extract question–answer pairs from your pasted text.
+
+There are **two ways** it can run:
+
+1. **Simple (no backend, easier – but exposes your key)**  
+   - Set `EXPO_PUBLIC_OPENAI_API_KEY` in your `.env` (or build env) to a valid OpenAI API key.  
+   - The app will call OpenAI **directly from the device**.  
+   - This is fine for personal use / experiments, but **not secure for a public app**, because the key is baked into the app and can be extracted.
+
+2. **Backend mode (more work, but safer for production)**  
+   - The app calls an API route at `/api/format` (see `app/api/format+api.ts`).  
+   - In development (`npx expo start`), this route is served by the Metro dev server and “just works”.  
+   - For standalone builds, you should deploy that route to your own backend and set `EXPO_PUBLIC_API_BASE_URL` to its base URL (e.g. `https://your-api.example.com`) before building. Android release builds should use HTTPS.
+
 ## Local database
 
 Vero uses `expo-sqlite` and a local database file named `vero.db`.  
@@ -90,6 +106,8 @@ cd android
 Generated APKs will be under `android/app/build/outputs/apk/`.
 
 ## Troubleshooting
+
+- **“Network error” when converting to Q&A in Gradle/standalone build**: The app has no API to call. See [Question generation (Convert to Q&A)](#question-generation-convert-to-qa) above: you need a hosted API and `EXPO_PUBLIC_API_BASE_URL` set at build time.
 
 - **"Could not create topic" popup** in native builds usually indicates a SQLite / DB init issue.  
   - Check the Metro / Logcat logs for `[Vero DB]` messages.

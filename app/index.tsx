@@ -16,6 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Colors } from '@/constants/theme';
 import {
+  deleteUserOpenAIKey,
+  getUserOpenAIKey,
+  setUserOpenAIKey,
+} from '@/app/lib/user-settings';
+import {
   createTopic,
   deleteTopic,
   getTopics,
@@ -30,6 +35,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const loadTopics = useCallback(async () => {
     setLoading(true);
@@ -51,6 +59,47 @@ export default function HomeScreen() {
     setNewTopicName('');
     setCreateModalVisible(true);
   };
+
+  const openSettingsModal = useCallback(async () => {
+    setSettingsVisible(true);
+    setSettingsLoading(true);
+    try {
+      const existing = await getUserOpenAIKey();
+      setApiKeyInput(existing ?? '');
+    } catch (err) {
+      console.error('[Home] load user settings failed', err);
+      Alert.alert('Error', 'Could not load settings.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  const handleSaveApiKey = useCallback(async () => {
+    const value = apiKeyInput.trim();
+    if (!value) {
+      Alert.alert('Invalid key', 'Enter a valid OpenAI API key or use Clear to remove it.');
+      return;
+    }
+    try {
+      await setUserOpenAIKey(value);
+      Alert.alert('Saved', 'API key saved on this device.');
+      setSettingsVisible(false);
+    } catch (err) {
+      console.error('[Home] save user API key failed', err);
+      Alert.alert('Error', 'Could not save API key.');
+    }
+  }, [apiKeyInput]);
+
+  const handleClearApiKey = useCallback(async () => {
+    try {
+      await deleteUserOpenAIKey();
+      setApiKeyInput('');
+      Alert.alert('Removed', 'API key removed from this device.');
+    } catch (err) {
+      console.error('[Home] delete user API key failed', err);
+      Alert.alert('Error', 'Could not remove API key.');
+    }
+  }, []);
 
   const handleCreateTopic = async () => {
     const name = newTopicName.trim() || 'Untitled topic';
@@ -124,10 +173,18 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Topics</Text>
-        <Pressable onPress={openCreateModal} style={styles.addButton}>
-          <Icon name="Plus" size={24} color={Colors.dark.accent} />
-          <Text style={styles.addText}>Create Topic</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={openSettingsModal}
+            style={styles.iconButton}
+            hitSlop={10}>
+            <Icon name="Settings" size={22} color={Colors.dark.secondaryText} />
+          </Pressable>
+          <Pressable onPress={openCreateModal} style={styles.addButton}>
+            <Icon name="Plus" size={24} color={Colors.dark.accent} />
+            <Text style={styles.addText}>Create Topic</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.filterRow}>
@@ -209,6 +266,51 @@ export default function HomeScreen() {
         </Pressable>
       </Modal>
 
+      <Modal
+        visible={settingsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setSettingsVisible(false)}>
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Settings</Text>
+            <Text style={styles.modalLabel}>OpenAI API key</Text>
+            {settingsLoading ? (
+              <View style={styles.settingsLoadingRow}>
+                <ActivityIndicator size="small" color={Colors.dark.accent} />
+                <Text style={styles.settingsLoadingText}>Loading…</Text>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="sk-..."
+                  placeholderTextColor={Colors.dark.secondaryText}
+                  value={apiKeyInput}
+                  onChangeText={setApiKeyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Text style={styles.settingsHint}>
+                  Stored only on this device and used to generate questions. Do not use a key you
+                  cannot rotate.
+                </Text>
+              </>
+            )}
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancel} onPress={handleClearApiKey}>
+                <Text style={styles.modalCancelText}>Clear</Text>
+              </Pressable>
+              <Pressable style={styles.modalCreate} onPress={handleSaveApiKey}>
+                <Text style={styles.modalCreateText}>Save</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <FlatList
         data={filteredTopics}
         keyExtractor={(item) => item.id}
@@ -267,10 +369,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.dark.divider,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: Colors.dark.primaryText,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 999,
   },
   addButton: {
     flexDirection: 'row',
@@ -408,5 +519,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  settingsLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  settingsLoadingText: {
+    fontSize: 14,
+    color: Colors.dark.secondaryText,
+  },
+  settingsHint: {
+    fontSize: 13,
+    color: Colors.dark.secondaryText,
+    marginBottom: 12,
   },
 });
